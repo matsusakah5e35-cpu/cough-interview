@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>咳の医療面接 評価表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+/* VOICE: 臨床の記録用紙。静かで正確、色は「可能性」だけに使う
+   IDEA: 問診票＋鑑別表。答えを記入すると該当疾患の欄に色が積もる
+   PICTURE: 表そのもの。見出しの疾患名セルが回答のたびに濃くなる
+   COLOUR and TYPE: 紙の白・墨・ティール1色の濃淡、否定は灰。Noto Sans JP
+   LAYOUT: 小さな表題と凡例、その下に固定見出し付きの表、操作は表の上に一列 */
+:root{color-scheme:light dark;
+--bg:light-dark(#fbfaf7,#14191b);--paper:light-dark(#ffffff,#1b2225);--ink:light-dark(#1e2a30,#e8ecea);
+--muted:light-dark(#5a6569,#9aa7aa);--line:light-dark(#dcd7cd,#2f3a3e);--head:light-dark(#f1eee7,#222b2e);
+--t:14,110,107;--tint:light-dark(rgb(14 110 107/.14),rgb(64 190 180/.22));--tint2:light-dark(rgb(14 110 107/.32),rgb(64 190 180/.42));
+--neg:light-dark(#ecebe8,#262c2e);--sel:light-dark(#0e6e6b,#5cc8bf);--warm:light-dark(#a8541a,#e39a5f)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 "Noto Sans JP",system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(20px,3vw,40px) max(4vw,14px)}
+h1{font-size:clamp(24px,3vw,34px);line-height:1.15;margin:0 0 6px;text-wrap:balance}
+.lede{margin:0 0 14px;color:var(--muted);max-width:70ch}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px}
+button{font:inherit;font-size:15px;min-height:40px;padding:6px 14px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
+button:focus-visible,[contenteditable]:focus-visible{outline:3px solid var(--sel);outline-offset:2px}
+button.on{background:var(--sel);color:var(--paper);border-color:var(--sel)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px;color:var(--muted);margin:0 0 16px}
+.legend span b{color:var(--ink)}
+.sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:5px;border:1px solid var(--line)}
+.scroll{overflow:auto;max-height:calc(100vh - 40px);border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:980px}
+th,td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:middle}
+thead th{position:sticky;top:0;z-index:3;background:var(--head);font-size:14px;text-align:center;white-space:nowrap}
+thead th.dx{min-width:104px;transition:background-color .35s}
+thead th.dx .nm{display:block;font-size:15px}
+thead th.dx .sc{display:block;font-size:12.5px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}
+thead th.dx.hot .sc{color:inherit}
+td.no{color:var(--muted);text-align:right;width:40px;font-variant-numeric:tabular-nums}
+td.q{min-width:300px}td.aim{color:var(--muted);font-size:13.5px;min-width:130px}
+td.ans{white-space:nowrap;width:118px}
+td.ans button{min-height:36px;min-width:46px;padding:2px 10px;font-size:17px}
+td.ans button.on.y{background:var(--sel)}td.ans button.on.n{background:var(--warm);border-color:var(--warm)}
+td.m{text-align:center;font-size:18px;transition:background-color .25s}
+td.m small{display:block;font-size:11.5px;color:var(--muted);line-height:1.2}
+td.m.up1{background:var(--tint)}td.m.up2{background:var(--tint2);font-weight:700}
+td.m.down{background:var(--neg);color:var(--muted);text-decoration:line-through}
+tr.grp td{background:var(--head);font-weight:700;font-size:14px;position:sticky;left:0}
+tr.done td.q{font-weight:500}
+.edit td.m{cursor:pointer}.edit td.m:hover{outline:2px dashed var(--sel);outline-offset:-3px}
+.edit td.q,.edit td.aim{background:light-dark(#fffdf3,#22282a)}
+.note{font-size:13px;color:var(--muted);margin:12px 0 0;max-width:80ch}
+.rank{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.rank div{font-size:14px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--paper)}
+@media(max-width:600px){.legend{font-size:13px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="band">
+<h1>咳の医療面接 評価表</h1>
+<p class="lede">質問するたびに患者さんの答えを〇（あてはまる）／×（あてはまらない）で入力すると、可能性が上がった疾患の欄が色づき、上の疾患名は回答を重ねるほど濃くなります。</p>
+<div class="bar">
+<button id="reset">回答をすべて消す</button>
+<button id="edit" aria-pressed="false">表を編集する</button>
+<button id="restore">表を初期内容に戻す</button>
+</div>
+<div class="legend">
+<span><b>◎</b> 強く示唆　<b>○</b> 可能性あり　<b>×</b> 否定寄り</span>
+<span><i class="sw" style="background:var(--tint2)"></i>大きく上がった</span>
+<span><i class="sw" style="background:var(--tint)"></i>上がった</span>
+<span><i class="sw" style="background:var(--neg)"></i>下がった</span>
+</div>
+<div class="rank" id="rank" aria-live="polite"></div>
+<div class="scroll"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+<p class="note">点数の付け方：〇なら ◎＋2・○＋1・×−2、×なら ◎−1・○0・×＋1（その所見が「ない」ことの意味は弱いため）。記号は一般的な臨床像からの学習用の目安で、尤度比などの数値に基づくものではありません。「表を編集する」を押すと、記号のセルをクリックして ◎→○→×→空欄 と切り替えたり、質問文を書き換えたりできます。入力内容はこのブラウザにだけ保存されます。</p>
+</div>
+<script>
+{
+const DX=['喘息','肺がん','COPD','COVID-19肺炎','間質性肺炎','NTM症'];
+const DEF=[
+['A','咳そのものと随伴症状'],
+['咳が始まって3週間未満ですか？','急性か慢性か',['O','X','X:増悪は別','O','X:急性増悪は別','X']],
+['咳が8週間以上続いていますか？','慢性咳嗽',['O','O','O','X:罹患後症状は別','O','O']],
+['痰の出ない乾いた咳ですか？','乾性か湿性か',['O','','','O','O','']],
+['痰はほぼ毎日出ますか？','慢性湿性咳嗽',['','O','O','','X','O']],
+['痰に血が混じったことがありますか？','血痰・喀血',['X','S','','','','O']],
+['息をするとゼーゼー・ヒューヒュー鳴りますか？','喘鳴',['S','O:局所性','O','','X','']],
+['夜中から明け方にひどくなる、または季節で変わりますか？','日内・季節変動',['S','','','','','']],
+['冷たい空気・運動・会話・煙・香水・かぜの後に悪化しますか？','気道過敏性',['O','','O','','','']],
+['症状がまったくない日や時期がありますか？','可逆性・変動性',['S','','X','','X','']],
+['階段や坂で息が切れ、それが年単位で悪化していますか？','労作時息切れの緩徐進行',['','O','S','','S','O']],
+['急に息苦しくなった、または安静にしていても苦しいですか？','急性の呼吸不全',['O:発作','','O:増悪','O','O:急性増悪','']],
+['38℃以上の急な発熱がありましたか？','急性感染',['','','','O','','X']],
+['微熱・寝汗・だるさが何週間も続いていますか？','慢性感染・悪性',['','O','','','','O']],
+['意図せず体重が減りましたか？','消耗性疾患',['','O','O:進行例','','','O']],
+['においや味がわかりにくくなりましたか？','嗅覚・味覚障害',['','','','S','','']],
+['のどの痛み・鼻水・筋肉痛・全身のだるさがありますか？','上気道炎・ウイルス感染',['O:増悪誘因','','','O','','']],
+['声のかすれ・胸や骨の痛み・頭痛やふらつき・顔のむくみがありますか？','局所進展・転移',['','S','','','','']],
+['指先が太鼓のばちのように丸く太くなっていますか？','ばち指',['','O','X','','O','']],
+['B','生活・背景'],
+['たばこを長く・多く吸ってきましたか？','喫煙曝露',['','O','O','O:重症化','O','']],
+['生まれてから一度もたばこを吸ったことがないですか？','非喫煙',['','','X','','','O']],
+['40歳未満ですか？','好発年齢',['O','X','X','O','X','X']],
+['中高年で痩せ型の女性ですか？','典型像',['','','','','','O']],
+['アレルギー性鼻炎・アトピー・小児喘息がありますか？（家族も）','アトピー素因',['O','','','','','']],
+['ペットや鳥を飼っている、羽毛布団・古い家・カビがありますか？','アレルゲン・過敏性肺炎の抗原',['O','','','','O','']],
+['石綿・粉塵・化学物質を扱う仕事をしてきましたか？','職業曝露',['O:職業性喘息','O','O','','O','']],
+['関節痛・朝のこわばり・指が白くなる・皮疹・目や口の乾きはありますか？','膠原病',['','','','','O','']],
+['抗がん剤・アミオダロン・メトトレキサートなどを飲んでいますか？','薬剤性肺障害',['','','','','O','']],
+['痛み止め（NSAIDs）やβ遮断薬で悪化したことがありますか？','薬剤誘発喘息',['O','','','','','']],
+['吸入薬や気管支拡張薬で症状がよくなったことがありますか？','薬への反応性',['S','','O:部分的','','','']],
+['周りに同じ症状の人や感染者がいますか？','接触歴・流行',['','','','O','','']],
+['結核・気管支拡張症の既往、漏斗胸や側弯がありますか？','既存の構造的肺病変',['','','','','','O']],
+['ガーデニング・土いじりや、循環式の風呂を使っていますか？','環境菌への曝露',['','','','','','O']],
+['健診で胸のレントゲンの異常を言われたことがありますか？','無症状期の画像異常',['','O','','','O','O']],
+['ステロイド・免疫を抑える薬・糖尿病・腎臓病・がん治療中ですか？','免疫低下・重症化因子',['','','','O:重症化','','O']],
+['胸やけや酸っぱいものが上がってくる感じがありますか？','GERD',['O:増悪因子','','','','O:IPF','O']]
+];
+const KEY='cough-interview-v1';
+const SYM={S:'◎',O:'○',X:'×','':''};
+const NEXT={S:'O',O:'X',X:'',' ':'S','':'S'};
+let rows,ans,editing=false;
+const clone=o=>JSON.parse(JSON.stringify(o));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&d.rows){rows=d.rows;ans=d.ans||{};return}}catch(e){}rows=clone(DEF);ans={}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({rows,ans}))}catch(e){}}
+const kind=m=>(m||'').split(':')[0];
+function delta(m,a){const k=kind(m);if(!a||!k)return 0;if(a==='y')return k==='S'?2:k==='O'?1:-2;return k==='S'?-1:k==='X'?1:0}
+function head(){
+  document.querySelector('#tbl thead').innerHTML='<tr><th>No</th><th>質問</th><th>ねらい</th><th>回答</th>'+DX.map((d,i)=>`<th class="dx" id="dx${i}"><span class="nm">${d}</span><span class="sc" id="sc${i}">0</span></th>`).join('')+'</tr>';
+}
+function body(){
+  let n=0;
+  document.querySelector('#tbl tbody').innerHTML=rows.map((r,ri)=>{
+    if(r[0]==='A'||r[0]==='B')return `<tr class="grp"><td colspan="${4+DX.length}">${esc(r[0])}. ${esc(r[1])}</td></tr>`;
+    n++;const a=ans[ri];
+    const cells=r[2].map((m,ci)=>{const d=delta(m,a);const cls=d>=2?'up2':d>0?'up1':d<0?'down':'';const [k,nt]=(m||'').split(':');
+      return `<td class="m ${cls}" data-r="${ri}" data-c="${ci}" aria-label="${DX[ci]}">${SYM[k]||''}${nt?`<small>${esc(nt)}</small>`:''}</td>`}).join('');
+    return `<tr class="${a?'done':''}"><td class="no">${n}</td><td class="q" data-r="${ri}" data-f="0">${esc(r[0])}</td><td class="aim" data-r="${ri}" data-f="1">${esc(r[1])}</td>
+<td class="ans"><button class="y${a==='y'?' on':''}" data-r="${ri}" data-a="y" aria-pressed="${a==='y'}" aria-label="〇 あてはまる">〇</button> <button class="n${a==='n'?' on':''}" data-r="${ri}" data-a="n" aria-pressed="${a==='n'}" aria-label="× あてはまらない">×</button></td>${cells}</tr>`}).join('');
+  setEditable();score();
+}
+function score(){
+  const s=DX.map(()=>0);
+  rows.forEach((r,ri)=>{if(r[2])r[2].forEach((m,ci)=>{const d=delta(m,ans[ri]);if(d>0)s[ci]+=d})});
+  const neg=DX.map(()=>0);rows.forEach((r,ri)=>{if(r[2])r[2].forEach((m,ci)=>{const d=delta(m,ans[ri]);if(d<0)neg[ci]+=d})});
+  const MAX=10;
+  s.forEach((v,i)=>{const th=document.getElementById('dx'+i);const a=Math.min(v/MAX,1);
+    th.style.backgroundColor=v>0?`rgba(14,110,107,${(0.12+a*0.88).toFixed(2)})`:'';
+    th.style.color=a>0.5?'#fff':'';th.classList.toggle('hot',v>0);
+    document.getElementById('sc'+i).textContent=`＋${v}`+(neg[i]?` ／ ${neg[i]}`:'')});
+  const net=DX.map((d,i)=>({d,v:s[i]+neg[i]})).sort((a,b)=>b.v-a.v);
+  const any=Object.keys(ans).length;
+  document.getElementById('rank').innerHTML=any?'<div><b>現在の順位（加点＋減点）</b></div>'+net.map((x,i)=>`<div>${i+1}. ${x.d}　${x.v>0?'＋':''}${x.v}</div>`).join(''):'<div>まだ回答はありません。質問の行の〇／×を押してください。</div>';
+}
+function setEditable(){document.querySelectorAll('td.q,td.aim').forEach(td=>td.contentEditable=editing?'true':'false');document.getElementById('tbl').classList.toggle('edit',editing)}
+load();head();body();
+const tb=document.querySelector('#tbl tbody');
+tb.addEventListener('click',e=>{
+  const b=e.target.closest('button[data-a]');
+  if(b){const r=+b.dataset.r;ans[r]=ans[r]===b.dataset.a?undefined:b.dataset.a;if(!ans[r])delete ans[r];save();body();return}
+  const td=e.target.closest('td.m');
+  if(td&&editing){const r=+td.dataset.r,c=+td.dataset.c;const cur=kind(rows[r][2][c]);rows[r][2][c]=NEXT[cur];save();body()}
+});
+tb.addEventListener('input',e=>{const td=e.target.closest('td[data-f]');if(!td)return;rows[+td.dataset.r][+td.dataset.f]=td.textContent;save()});
+document.getElementById('reset').onclick=()=>{ans={};save();body()};
+const eb=document.getElementById('edit');
+eb.onclick=()=>{editing=!editing;eb.classList.toggle('on',editing);eb.setAttribute('aria-pressed',editing);eb.textContent=editing?'編集を終える':'表を編集する';setEditable()};
+const rb=document.getElementById('restore');let armed=false;
+rb.onclick=()=>{if(!armed){armed=true;rb.textContent='本当に戻す？もう一度押す';setTimeout(()=>{armed=false;rb.textContent='表を初期内容に戻す'},3000);return}
+  armed=false;rows=clone(DEF);ans={};save();body();rb.textContent='表を初期内容に戻す'};
+}
+</script>
+</body>
+</html>
