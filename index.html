@@ -36,7 +36,7 @@ th,td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:middle
 thead th{position:sticky;top:0;z-index:3;background:var(--head);font-size:14px;text-align:center;white-space:nowrap}
 thead th.dx{min-width:104px;transition:background-color .35s}
 thead th.dx .nm{display:block;font-size:15px}
-thead th.dx .sc{display:block;font-size:12.5px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}
+thead th.dx .sc{display:block;white-space:pre-line;line-height:1.3;font-size:12.5px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}
 thead th.dx.hot .sc{color:inherit}
 td.no{color:var(--muted);text-align:right;width:40px;font-variant-numeric:tabular-nums}
 td.q{min-width:300px}td.aim{color:var(--muted);font-size:13.5px;min-width:130px}
@@ -47,6 +47,8 @@ td.m{text-align:center;font-size:18px;transition:background-color .25s}
 td.m small{display:block;font-size:11.5px;color:var(--muted);line-height:1.2}
 td.m.up1{background:var(--tint)}td.m.up2{background:var(--tint2);font-weight:700}
 td.m.down{background:var(--neg);color:var(--muted);text-decoration:line-through}
+tr.lockrow td{color:var(--muted);background:light-dark(#f6f5f2,#1f2629)}
+.auto{display:block;font-size:12.5px;line-height:1.35;white-space:normal;color:var(--muted)}
 tr.grp td{background:var(--head);font-weight:700;font-size:14px;position:sticky;left:0}
 tr.done td.q{font-weight:500}
 .edit td.m{cursor:pointer}.edit td.m:hover{outline:2px dashed var(--sel);outline-offset:-3px}
@@ -75,7 +77,7 @@ tr.done td.q{font-weight:500}
 </div>
 <div class="rank" id="rank" aria-live="polite"></div>
 <div class="scroll"><table id="tbl"><thead></thead><tbody></tbody></table></div>
-<p class="note">点数の付け方：〇なら ◎＋2・○＋1・×−2、×なら ◎−1・○0・×＋1（その所見が「ない」ことの意味は弱いため）。記号は一般的な臨床像からの学習用の目安で、尤度比などの数値に基づくものではありません。「表を編集する」を押すと、記号のセルをクリックして ◎→○→×→空欄 と切り替えたり、質問文を書き換えたりできます。入力内容はこのブラウザにだけ保存されます。</p>
+<p class="note">点数の付け方：〇なら ◎＋2・○＋1・×−2、×なら ◎−1・○0・×＋1（その所見が「ない」ことの意味は弱いため）。疾患名の色の濃さは加点と減点を合わせた合計で決まり、マイナスが入ると薄くなります（合計0以下は色なし）。Q1とQ2、Q19とQ20は同じことを逆向きに聞く質問なので、片方に〇を付けるともう片方は自動で×扱いになり、点数は二重に数えません。記号は一般的な臨床像からの学習用の目安で、尤度比などの数値に基づくものではありません。「表を編集する」を押すと、記号のセルをクリックして ◎→○→×→空欄 と切り替えたり、質問文を書き換えたりできます。入力内容はこのブラウザにだけ保存されます。</p>
 </div>
 <script>
 {
@@ -129,6 +131,11 @@ function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&
 function save(){try{localStorage.setItem(KEY,JSON.stringify({rows,ans}))}catch(e){}}
 const kind=m=>(m||'').split(':')[0];
 function delta(m,a){const k=kind(m);if(!a||!k)return 0;if(a==='y')return k==='S'?2:k==='O'?1:-2;return k==='S'?-1:k==='X'?1:0}
+// 同じ事実を逆向きに聞く質問のペア（片方に〇なら、もう片方は自動で×扱い・二重加点なし）
+const PAIR={1:2,2:1,20:21,21:20};
+const lockBy=ri=>{const p=PAIR[ri];return p!==undefined&&ans[p]==='y'?p:null};
+const eff=ri=>lockBy(ri)===null?ans[ri]:undefined;
+const NUM={};{let n=0;DEF.forEach((r,i)=>{if(r[2])NUM[i]=++n})}
 function head(){
   document.querySelector('#tbl thead').innerHTML='<tr><th>No</th><th>質問</th><th>ねらい</th><th>回答</th>'+DX.map((d,i)=>`<th class="dx" id="dx${i}"><span class="nm">${d}</span><span class="sc" id="sc${i}">0</span></th>`).join('')+'</tr>';
 }
@@ -136,7 +143,10 @@ function body(){
   let n=0;
   document.querySelector('#tbl tbody').innerHTML=rows.map((r,ri)=>{
     if(r[0]==='A'||r[0]==='B')return `<tr class="grp"><td colspan="${4+DX.length}">${esc(r[0])}. ${esc(r[1])}</td></tr>`;
-    n++;const a=ans[ri];
+    n++;const lk=lockBy(ri);const a=eff(ri);
+    if(lk!==null){
+      const cells=r[2].map((m,ci)=>{const [k,nt]=(m||'').split(':');return `<td class="m locked" data-r="${ri}" data-c="${ci}" aria-label="${DX[ci]}">${SYM[k]||''}${nt?`<small>${esc(nt)}</small>`:''}</td>`}).join('');
+      return `<tr class="lockrow"><td class="no">${n}</td><td class="q" data-r="${ri}" data-f="0">${esc(r[0])}</td><td class="aim" data-r="${ri}" data-f="1">${esc(r[1])}</td><td class="ans"><span class="auto">Q${NUM[lk]}が〇なので×<br>（点数は二重に数えない）</span></td>${cells}</tr>`}
     const cells=r[2].map((m,ci)=>{const d=delta(m,a);const cls=d>=2?'up2':d>0?'up1':d<0?'down':'';const [k,nt]=(m||'').split(':');
       return `<td class="m ${cls}" data-r="${ri}" data-c="${ci}" aria-label="${DX[ci]}">${SYM[k]||''}${nt?`<small>${esc(nt)}</small>`:''}</td>`}).join('');
     return `<tr class="${a?'done':''}"><td class="no">${n}</td><td class="q" data-r="${ri}" data-f="0">${esc(r[0])}</td><td class="aim" data-r="${ri}" data-f="1">${esc(r[1])}</td>
@@ -145,13 +155,14 @@ function body(){
 }
 function score(){
   const s=DX.map(()=>0);
-  rows.forEach((r,ri)=>{if(r[2])r[2].forEach((m,ci)=>{const d=delta(m,ans[ri]);if(d>0)s[ci]+=d})});
-  const neg=DX.map(()=>0);rows.forEach((r,ri)=>{if(r[2])r[2].forEach((m,ci)=>{const d=delta(m,ans[ri]);if(d<0)neg[ci]+=d})});
+  rows.forEach((r,ri)=>{if(r[2])r[2].forEach((m,ci)=>{const d=delta(m,eff(ri));if(d>0)s[ci]+=d})});
+  const neg=DX.map(()=>0);rows.forEach((r,ri)=>{if(r[2])r[2].forEach((m,ci)=>{const d=delta(m,eff(ri));if(d<0)neg[ci]+=d})});
   const MAX=10;
-  s.forEach((v,i)=>{const th=document.getElementById('dx'+i);const a=Math.min(v/MAX,1);
-    th.style.backgroundColor=v>0?`rgba(14,110,107,${(0.12+a*0.88).toFixed(2)})`:'';
-    th.style.color=a>0.5?'#fff':'';th.classList.toggle('hot',v>0);
-    document.getElementById('sc'+i).textContent=`＋${v}`+(neg[i]?` ／ ${neg[i]}`:'')});
+  // 色の濃さは「加点＋減点」の合計で決める：マイナスが入ると薄くなり、0以下なら色なし
+  s.forEach((v,i)=>{const th=document.getElementById('dx'+i);const net=v+neg[i];const a=Math.min(Math.max(net,0)/MAX,1);
+    th.style.backgroundColor=net>0?`rgba(14,110,107,${(0.12+a*0.88).toFixed(2)})`:'';
+    th.style.color=a>0.5?'#fff':'';th.classList.toggle('hot',net>0);
+    document.getElementById('sc'+i).textContent=`計 ${net>0?'＋':''}${net}`+(v||neg[i]?`\n＋${v} ／ ${neg[i]}`:'')});
   const net=DX.map((d,i)=>({d,v:s[i]+neg[i]})).sort((a,b)=>b.v-a.v);
   const any=Object.keys(ans).length;
   document.getElementById('rank').innerHTML=any?'<div><b>現在の順位（加点＋減点）</b></div>'+net.map((x,i)=>`<div>${i+1}. ${x.d}　${x.v>0?'＋':''}${x.v}</div>`).join(''):'<div>まだ回答はありません。質問の行の〇／×を押してください。</div>';
@@ -161,7 +172,8 @@ load();head();body();
 const tb=document.querySelector('#tbl tbody');
 tb.addEventListener('click',e=>{
   const b=e.target.closest('button[data-a]');
-  if(b){const r=+b.dataset.r;ans[r]=ans[r]===b.dataset.a?undefined:b.dataset.a;if(!ans[r])delete ans[r];save();body();return}
+  if(b){const r=+b.dataset.r;ans[r]=ans[r]===b.dataset.a?undefined:b.dataset.a;if(!ans[r])delete ans[r];
+    if(ans[r]==='y'&&PAIR[r]!==undefined)delete ans[PAIR[r]];save();body();return}
   const td=e.target.closest('td.m');
   if(td&&editing){const r=+td.dataset.r,c=+td.dataset.c;const cur=kind(rows[r][2][c]);rows[r][2][c]=NEXT[cur];save();body()}
 });
